@@ -56,6 +56,24 @@ class GameConfig:
 
         return True
 
+    def get_power(self):
+        red = 0
+        green = 0
+        blue = 0
+
+        for run in self.runs:
+            if run.red > red:
+                red = run.red
+
+            if run.green > green:
+                green = run.green
+
+            if run.blue > blue:
+                blue = run.blue
+
+        return red * green * blue
+
+
     @staticmethod
     def parse(bag_load: CubeSet, in_: str) -> 'GameConfig':
         """
@@ -78,6 +96,7 @@ def main():
     cube_set = CubeSet(red=12, green=13, blue=14)
 
     possible_games_id_sum = 0
+    sum_powers = 0
 
     for line in lines:
         game = GameConfig.parse(cube_set, line.strip())
@@ -85,7 +104,10 @@ def main():
         if game.is_valid():
             possible_games_id_sum += game.id
 
+        sum_powers += game.get_power()
+
     print(f'Sum IDs of valid games: {possible_games_id_sum}')
+    print(f'Sum powers of all games: {sum_powers}')
 
 
 if __name__ == '__main__':
