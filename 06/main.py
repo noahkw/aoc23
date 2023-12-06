@@ -40,7 +40,7 @@ def read_input() -> list[str]:
 
 
 def parse_number_line(line: str) -> list[int]:
-    return [int(num) for num in re.findall(r'\d+', line)]
+    return [int(num) for num in re.findall(r'\d+', line.replace(' ', ''))]
 
 
 def main():
