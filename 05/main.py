@@ -70,11 +70,21 @@ class NumberMap:
         return "\n".join([str(entry) for entry in self.entries])
 
 
+def parse_seeds(line: str) -> list[range]:
+    seeds = parse_number_line(line)
+    seed_ranges = []
+
+    for start, length in zip(seeds[0::2], seeds[1::2]):
+        seed_ranges.append(range(start, start + length))
+
+    return seed_ranges
+
+
 def main():
     lines = read_input()
 
-    seeds = parse_number_line(lines[0])
-    print(f"Starting seeds: {seeds}")
+    seeds_ranges = parse_seeds(lines[0])
+    print(f"Starting seeds: {seeds_ranges}")
 
     maps: list[NumberMap] = []
 
@@ -103,14 +113,15 @@ def main():
 
     seeds_out = []
 
-    for seed in seeds:
-        seed_out = seed
+    for seed_range in seeds_ranges:
+        for seed in seed_range:
+            seed_out = seed
 
-        for idx, map in enumerate(maps):
-            print(f'seed map {idx}, {seed_out}')
-            seed_out = map.map_number(seed_out)
+            for idx, map in enumerate(maps):
+                print(f'seed map {idx}, {seed_out}')
+                seed_out = map.map_number(seed_out)
 
-        seeds_out.append(seed_out)
+            seeds_out.append(seed_out)
 
     print(f'Seeds out: {seeds_out}, Result: {min(seeds_out)}')
 
