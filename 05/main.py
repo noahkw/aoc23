@@ -31,12 +31,24 @@ class NumberMapEntry:
         diff = abs(num - self.source_range_start)
         return self.dest_range_start + diff
 
+    def map_number_rev(self, num: int) -> int | None:
+        r = range(self.dest_range_start, self.dest_range_start + self.range_len)
+
+        if num not in r:
+            return None
+
+        diff = abs(num - self.dest_range_start)
+        return self.source_range_start + diff
+
     @staticmethod
     def parse(line: str):
         numbers = parse_number_line(line)
         assert len(numbers) == 3
 
         return NumberMapEntry(*numbers)
+
+    def dest_range(self) -> range:
+        return range(self.dest_range_start, self.dest_range_start + self.range_len)
 
     def __str__(self):
         return f'{self.dest_range_start} {self.source_range_start} {self.range_len}'
@@ -63,6 +75,13 @@ class NumberMap:
         val = None
         for entry in self.entries:
             val = entry.map_number(num) or val
+
+        return val or num
+
+    def map_number_rev(self, num: int) -> int:
+        val = None
+        for entry in self.entries:
+            val = entry.map_number_rev(num) or val
 
         return val or num
 
@@ -111,19 +130,42 @@ def main():
 
     assert len(maps) == 7
 
-    seeds_out = []
+    location_ranges = maps[-1].entries
 
-    for seed_range in seeds_ranges:
-        for seed in seed_range:
-            seed_out = seed
+    dest_ranges = [location_range.dest_range() for location_range in location_ranges]
+    dest_ranges = sorted(dest_ranges, key=lambda r: r.stop)
 
-            for idx, map in enumerate(maps):
-                print(f'seed map {idx}, {seed_out}')
-                seed_out = map.map_number(seed_out)
+    for dest_range in dest_ranges:
+        print(f'starting with range {dest_range}')
+        for i in dest_range:
+            possible_seed = i
 
-            seeds_out.append(seed_out)
+            if i % 10000 == 0:
+                print(i)
 
-    print(f'Seeds out: {seeds_out}, Result: {min(seeds_out)}')
+            for map in reversed(maps):
+                possible_seed = map.map_number_rev(possible_seed)
+
+            for seed_range in seeds_ranges:
+                if possible_seed in seed_range:
+                    raise ValueError(f'we got em: {i}')
+
+    # naive solution
+
+    # seeds_out = []
+    #
+    # for seed_range in seeds_ranges:
+    #     for seed in seed_range:
+    #         seed_out = seed
+    #
+    #         for idx, map in enumerate(maps):
+    #             print(f'seed map {idx}, {seed_out}')
+    #             seed_out = map.map_number(seed_out)
+    #
+    #         seeds_out.append(seed_out)
+    #
+    # print(f'Seeds out: {seeds_out}, Result: {min(seeds_out)}')
+
 
 if __name__ == '__main__':
     main()
