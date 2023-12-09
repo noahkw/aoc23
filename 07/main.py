@@ -18,6 +18,9 @@ class Card:
     def __repr__(self):
         return self.label
 
+    def __index__(self):
+        return self.value
+
     @staticmethod
     def from_label(label: str):
         if label == 'A':
@@ -27,7 +30,7 @@ class Card:
         elif label == 'Q':
             return Card(12, label)
         elif label == 'J':
-            return Card(11, label)
+            return Card(1, label)
         elif label == 'T':
             return Card(10, label)
         else:
@@ -44,6 +47,31 @@ class Card:
         return self.value == other.value
 
 
+CARDS_WITHOUT_JOKER = [
+                          Card.from_label('A'),
+                          Card.from_label('K'),
+                          Card.from_label('Q'),
+                          Card.from_label('T'),
+                      ] + [Card.from_label(str(val)) for val in range(2, 9 + 1)]
+
+
+def resolve_first_joker(hand: 'Hand') -> list['Hand']:
+    possible_hands: list['Hand'] = []
+
+    for idx, card in enumerate(hand.cards):
+        if card.value != 1:
+            continue
+
+        for c in CARDS_WITHOUT_JOKER:
+            new_hand = Hand(hand.cards[:], hand.bid)
+            new_hand.cards[idx] = c
+            possible_hands.append(new_hand)
+
+        break
+
+    return possible_hands
+
+
 class Hand:
     cards: list[Card]
     bid: int
@@ -55,7 +83,33 @@ class Hand:
     def __repr__(self):
         return ''.join(str(card) for card in self.cards) + f' {self.bid}'
 
+    def number_jokers(self) -> int:
+        return sum(1 for card in self.cards if card.value == 1)
+
+    def generate_possible_hands(self) -> list['Hand']:
+        possible_hands: list['Hand'] = [self]
+
+        for _ in range(self.number_jokers()):
+            for hand in possible_hands:
+                new_hands = resolve_first_joker(hand)
+                possible_hands.extend(new_hands)
+
+        return possible_hands
+
     def evaluate_hand_strength(self, evaluators: list['HandEvaluator']) -> int:
+        if Card.from_label('J') in self.cards:
+            # shortcut for very jokery hands
+            if evaluators[0].evaluate(self) or self.cards.count(Card.from_label('J')) == 4:
+                # five of a kind with jokers
+                # four of a kind with jokers becomes a five of a kind too
+                return 6
+
+            hands = self.generate_possible_hands()
+            return max(hand.evaluate_single_hand(evaluators) for hand in hands)
+
+        return self.evaluate_single_hand(evaluators)
+
+    def evaluate_single_hand(self, evaluators: list['HandEvaluator']) -> int:
         for evaluator in evaluators:
             result = evaluator.evaluate(self)
 
@@ -160,7 +214,9 @@ def main():
     hand_buckets: dict[int, list[Hand]] = {k: [] for k in range(len(evaluators))}
 
     for hand in hands:
-        hand_buckets[hand.evaluate_hand_strength(evaluators)].append(hand)
+        hand_strength = hand.evaluate_hand_strength(evaluators)
+        print(f'{hand}, strength: {hand_strength}')
+        hand_buckets[hand_strength].append(hand)
 
     total_order = []
 
@@ -172,6 +228,7 @@ def main():
 
     for idx, hand in enumerate(total_order):
         rank = len(total_order) - idx
+        print(f'{hand}, Rank: {rank}')
         winnings += rank * hand.bid
 
     print(f'Total winnings: {winnings}')
